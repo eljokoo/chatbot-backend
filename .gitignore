@@ -1,0 +1,6 @@
+virtual-env
+.env
+__pycache__
+.venv
+Fridge-part-links.txt
+Dishwasher-part-links.txt
