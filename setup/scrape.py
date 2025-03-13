@@ -36,21 +36,26 @@ def extract_tags(html_content, tags: list[str]):
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     text_parts = []
+    img = ""
 
     for tag in tags:
         elements = soup.find_all(tag)
         for element in elements:
-            # If the tag is a link (a tag), append its href as well
-            if tag == "a":
-                href = element.get('href')
-                if href:
-                    text_parts.append(f"{element.get_text()} ({href})")
-                else:
-                    text_parts.append(element.get_text())
+            # If the tag is an image, append its src and alt text
+            if tag == "img":
+                src = element.get('src')
+                alt = element.get('alt', '').strip()
+                if src:
+                    if alt:
+                        text_parts.append(f"{alt} ({src})")
+                    else:
+                        text_parts.append(src)
+            elif tag == "a" and element.get('id') == "MagicZoom-PartImage-Images":
+                img = element.get('href')  
             else:
                 text_parts.append(element.get_text())
 
-    return ' '.join(text_parts)
+    return ' '.join(text_parts), img
 
 
 def remove_unessesary_lines(content):
@@ -91,16 +96,16 @@ async def ascrape_playwright(url, tags: list[str] = ["h1", "h2", "h3", "span"]) 
 
             page_source = await page.content()
 
-            print(page_source, "page source")
+            text, img = extract_tags(remove_unwanted_tags(
+                page_source), tags)
 
-            results = remove_unessesary_lines(extract_tags(remove_unwanted_tags(
-                page_source), tags))
-            print("Content scraped")
-            print(results, "results are these")
+            results = remove_unessesary_lines(text)
+            # print("Content scraped")
+            # print("Results are these\n", results)
         except Exception as e:
             results = f"Error: {e}"
         await browser.close()
-    return results
+    return results, img
 
 
 async def ascrape_brand_part_websites(url: str, appliance_name: str):
